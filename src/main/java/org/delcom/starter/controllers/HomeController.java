@@ -66,6 +66,7 @@ public class HomeController {
         String data = decodeBase64(strBase64);
         String[] lines = data.split("\n");
 
+<<<<<<< HEAD
         double totalNilai = 0.0;
         int totalBobot = 0;
 
@@ -185,3 +186,6 @@ public class HomeController {
         return String.format("Kata 'ter' yang paling sering muncul adalah '%s' (muncul %d kali).", topWord, maxCount);
     }
 }
+=======
+}
+>>>>>>> 97c2f9214c3eb25a34d458891d1009c1187319a1
