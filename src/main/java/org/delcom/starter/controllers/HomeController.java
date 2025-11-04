@@ -66,7 +66,6 @@ public class HomeController {
         String data = decodeBase64(strBase64);
         String[] lines = data.split("\n");
 
-<<<<<<< HEAD
         double totalNilai = 0.0;
         int totalBobot = 0;
 
@@ -150,7 +149,7 @@ public class HomeController {
     }
 
     /**
-     * 4. Paling Ter (Diperbaiki agar branch coverage penuh)
+     * 4. Paling Ter
      */
     @GetMapping("/paling-ter")
     public String palingTer(@RequestParam String strBase64) {
@@ -158,15 +157,9 @@ public class HomeController {
         Map<String, Integer> freq = new HashMap<>();
         String[] words = text.toLowerCase().split("\\W+");
 
-        // Memecah kondisi menjadi nested if agar JaCoCo melihat semua cabang
         for (String word : words) {
-            if (word.isEmpty()) {
-                // intentionally do nothing: this covers the "word is empty" branch
-            } else {
-                // now word is not empty -> cover branch where startsWith may be true or false
-                if (word.startsWith("ter")) {
-                    freq.put(word, freq.getOrDefault(word, 0) + 1);
-                }
+            if (!word.isEmpty() && word.startsWith("ter")) {
+                freq.put(word, freq.getOrDefault(word, 0) + 1);
             }
         }
 
@@ -183,9 +176,8 @@ public class HomeController {
             }
         }
 
+        //coba baru
+
         return String.format("Kata 'ter' yang paling sering muncul adalah '%s' (muncul %d kali).", topWord, maxCount);
     }
 }
-=======
-}
->>>>>>> 97c2f9214c3eb25a34d458891d1009c1187319a1
