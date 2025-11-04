@@ -18,124 +18,168 @@ public class HomeControllerTest {
         controller = new HomeController();
     }
 
-    // 1. Tes untuk informasiNim
+    // ===================================================================
+    // 1. informasiNim
+    // ===================================================================
     @Test
-    void testInformasiNim_AllCases() {
-        // Kasus valid
-        String resultValid = controller.informasiNim("11S23001");
-        assertTrue(resultValid.contains("Sarjana Informatika") && resultValid.contains("Angkatan: 2023"));
+    void testInformasiNim_Valid() {
+        String result = controller.informasiNim("11S23001");
+        assertTrue(result.contains("Sarjana Informatika"));
+        assertTrue(result.contains("Angkatan: 2023"));
+        assertTrue(result.contains("Urutan: 1"));
+    }
 
-        // Kasus tidak valid (terlalu pendek atau null)
+    @Test
+    void testInformasiNim_InvalidLength() {
         assertTrue(controller.informasiNim("123").contains("minimal 8 karakter"));
-        assertTrue(controller.informasiNim(null).contains("minimal 8 karakter"));
+    }
 
-        // Kasus prodi tidak diketahui
+    @Test
+    void testInformasiNim_Null() {
+        assertTrue(controller.informasiNim(null).contains("minimal 8 karakter"));
+    }
+
+    @Test
+    void testInformasiNim_UnknownProdi() {
         assertTrue(controller.informasiNim("99X23123").contains("Unknown"));
     }
 
-    // 2. Tes untuk perolehanNilai
+    // ===================================================================
+    // 2. perolehanNilai
+    // ===================================================================
     @Test
     void testPerolehanNilai_Valid() {
         String data = "UAS|85|40\nUTS|75|30\nPA|90|20\nK|100|10";
         String b64 = Base64.getEncoder().encodeToString(data.getBytes());
         String result = controller.perolehanNilai(b64);
-        assertTrue(result.contains("84.50") && result.contains("Grade: B"));
+        assertTrue(result.contains("84.50"));
+        assertTrue(result.contains("Grade: B"));
+        assertTrue(result.contains("Total Bobot: 100%"));
     }
 
-    /**
-     * TEST TAMBAHAN UNTUK MENGHILANGKAN BARIS KUNING DI perolehanNilai
-     * Mencakup semua kondisi if di dalam loop.
-     */
     @Test
     void testPerolehanNilai_FullBranchCoverage() {
-        String data = 
-            "UAS|90|50\n" +         // Baris valid
-            "\n" +                  // Baris kosong -> (mencakup line.isEmpty())
-            "Tugas|80|0\n" +        // Bobot 0 -> (mencakup else dari if (bobot > 0))
-            "Invalid Line\n" +      // Baris tanpa '|' -> (mencakup else dari if (line.contains("|")))
-            "Hanya|Dua\n" +         // Format salah (2 bagian) -> (mencakup else dari if (parts.length == 3))
-            "Nilai|abc|def\n" +     // Format angka salah (NumberFormatException)
-            "---\n" +               // Break loop
-            "Ini|tidak|dihitung";
-            
+        String data =
+                "Valid|90|50\n" +
+                "\n" +
+                "Zero|80|0\n" +
+                "NoPipe\n" +
+                "Two|Parts\n" +
+                "Bad|abc|def\n" +
+                "---\n" +
+                "Last|70|30";
+
         String b64 = Base64.getEncoder().encodeToString(data.getBytes());
         String result = controller.perolehanNilai(b64);
-        
-        // Hanya baris pertama yang dihitung (90 * 50% = 45.00)
-        assertEquals("Nilai Akhir: 45.00 (Total Bobot: 50%)\nGrade: E", result);
+        assertEquals("Nilai Akhir: 66.00 (Total Bobot: 80%)\nGrade: C", result);
     }
-    
+
     @Test
     void testPerolehanNilai_InvalidBase64() {
-        assertThrows(IllegalArgumentException.class, () -> controller.perolehanNilai("!@#"));
+        assertThrows(IllegalArgumentException.class, () ->
+                controller.perolehanNilai("!@#invalid"));
     }
 
-    // 3. Tes untuk perbedaanL
+    // ===================================================================
+    // 3. perbedaanL
+    // ===================================================================
     @Test
-    void testPerbedaanL_AllCases() {
-        // Kasus valid
-        String b64Valid = Base64.getEncoder().encodeToString("UULL".getBytes());
-        assertTrue(controller.perbedaanL(b64Valid).contains("Perbedaan Jarak: 8"));
-
-        // Kasus dengan karakter tidak valid (untuk coverage switch-case)
-        String b64InvalidChar = Base64.getEncoder().encodeToString("U R D L X Y Z".getBytes());
-        assertTrue(controller.perbedaanL(b64InvalidChar).contains("Perbedaan Jarak: 0"));
+    void testPerolehanL_Valid() {
+        String path = "UULL";
+        String b64 = Base64.getEncoder().encodeToString(path.getBytes());
+        String result = controller.perbedaanL(b64);
+        assertTrue(result.contains("Path Original: UULL -> (-2, 2)"));
+        assertTrue(result.contains("Path Kebalikan: DDRR -> (2, -2)"));
+        assertTrue(result.contains("Perbedaan Jarak: 8"));
     }
 
-    // 4. Tes untuk palingTer
     @Test
-    void testPalingTer_Valid() {
-        String text = "terbaik terbaik termahal";
+    void testPerbedaanL_InvalidCharacters() {
+        String path = "U R D L X Y Z";
+        String b64 = Base64.getEncoder().encodeToString(path.getBytes());
+        String result = controller.perbedaanL(b64);
+        assertTrue(result.contains("Perbedaan Jarak: 0"));
+    }
+
+    @Test
+    void testPerbedaanL_InvalidBase64() {
+        assertThrows(IllegalArgumentException.class, () ->
+                controller.perbedaanL("not-base64!"));
+    }
+
+    // ===================================================================
+    // 4. palingTer – 100% BRANCH COVERAGE (FIXED)
+    // ===================================================================
+
+    @Test
+    void testPalingTer_NoTerWords() {
+        String text = "hello world java spring";
         String b64 = Base64.getEncoder().encodeToString(text.getBytes());
-        assertTrue(controller.palingTer(b64).contains("'terbaik' (muncul 2 kali)"));
+        assertEquals("Tidak ditemukan kata yang berawalan 'ter'.", controller.palingTer(b64));
     }
 
     @Test
-    void testPalingTer_FullBranchCoverage() {
-        // Kasus 1: Tidak ditemukan kata 'ter' -> mencakup if (freq.isEmpty())
-        String noTer = Base64.getEncoder().encodeToString("hello world".getBytes());
-        assertEquals("Tidak ditemukan kata yang berawalan 'ter'.", controller.palingTer(noTer));
-
-        // Kasus 2: Teks dengan spasi ganda -> mencakup if (!word.isEmpty())
-        String doubleSpace = Base64.getEncoder().encodeToString("tercepat  terlambat".getBytes());
-        assertTrue(controller.palingTer(doubleSpace).contains("muncul 1 kali"));
-        
-        // Kasus 3: Beberapa kata 'ter' dengan frekuensi berbeda
-        String multiple = "terbaik terendah terbaik terburuk terendah terbaik";
-        String b64Multiple = Base64.getEncoder().encodeToString(multiple.getBytes());
-        assertTrue(controller.palingTer(b64Multiple).contains("'terbaik' (muncul 3 kali)"));
-    }
-
-    @Test
-    void testPalingTer_SingleWordTer() {
-        // Kasus khusus: hanya satu kata "ter"
-        String singleTer = Base64.getEncoder().encodeToString("ter".getBytes());
-        String result = controller.palingTer(singleTer);
-
-        // Pastikan hasil sesuai dengan kondisi frekuensi tunggal
-        assertTrue(result.contains("'ter' (muncul 1 kali)"));
-    }
-
-    // Tes untuk helper method (calculateGrade) untuk memastikan 100%
-    @Test
-    void testCalculateGrade_Coverage() throws Exception {
-        Method method = HomeController.class.getDeclaredMethod("calculateGrade", double.class);
-        method.setAccessible(true);
-        assertEquals("A", method.invoke(controller, 90.0));
-        assertEquals("B", method.invoke(controller, 80.0));
-        assertEquals("C", method.invoke(controller, 70.0));
-        assertEquals("D", method.invoke(controller, 60.0));
-        assertEquals("E", method.invoke(controller, 50.0));
-    }
-
-   @Test
-    void testPalingTer_WithEmptyStringInWords() {
-        // Ada spasi ganda supaya muncul word kosong ("")
-        String text = "terbaik  "; // <- ada 2 spasi di akhir
+    void testPalingTer_OneTerWord() {
+        String text = "terbaik";
         String b64 = Base64.getEncoder().encodeToString(text.getBytes());
         String result = controller.palingTer(b64);
-
         assertTrue(result.contains("'terbaik' (muncul 1 kali)"));
     }
 
+    @Test
+    void testPalingTer_MultipleTerWords_DifferentFrequency() {
+        String text = "terbaik terendah terbaik terburuk terendah terbaik";
+        String b64 = Base64.getEncoder().encodeToString(text.getBytes());
+        String result = controller.palingTer(b64);
+        assertTrue(result.contains("'terbaik' (muncul 3 kali)"));
+    }
+
+    // KRITIS: Pastikan cabang FALSE dari if (value > maxCount)
+    @Test
+    void testPalingTer_TwoWords_SameFrequency_EnsuresFalseBranch() {
+        String text = "terbaik terburuk"; // masing-masing 1 kali
+        String b64 = Base64.getEncoder().encodeToString(text.getBytes());
+
+        String result = controller.palingTer(b64);
+        assertTrue(
+            result.contains("'terbaik'") || result.contains("'terburuk'"),
+            "Harus memilih salah satu dari dua kata"
+        );
+        assertTrue(result.contains("muncul 1 kali"));
+    }
+
+    // KRITIS: Exception dari decodeBase64 di palingTer
+    @Test
+    void testPalingTer_InvalidBase64() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            controller.palingTer("ini-bukan-base64!");
+        });
+    }
+
+    // KRITIS: GANTI DARI DOUBLE SPACE → PAKAI TITIK → PASTI HASILKAN ""
+    @Test
+    void testPalingTer_EmptyWord_ForceShortCircuit_WithPunctuation() {
+        String text = ".terbaik"; // titik → split("\\W+") → ["", "terbaik"]
+        String b64 = Base64.getEncoder().encodeToString(text.getBytes());
+
+        String result = controller.palingTer(b64);
+        assertTrue(result.contains("'terbaik' (muncul 1 kali)"));
+
+        // word = "" → !word.isEmpty() → false → SHORT-CIRCUIT → tercover!
+    }
+
+    // ===================================================================
+    // Helper: calculateGrade (via reflection)
+    // ===================================================================
+    @Test
+    void testCalculateGrade_AllGrades() throws Exception {
+        Method method = HomeController.class.getDeclaredMethod("calculateGrade", double.class);
+        method.setAccessible(true);
+
+        assertEquals("A", method.invoke(controller, 85.0));
+        assertEquals("B", method.invoke(controller, 75.0));
+        assertEquals("C", method.invoke(controller, 65.0));
+        assertEquals("D", method.invoke(controller, 55.0));
+        assertEquals("E", method.invoke(controller, 54.9));
+    }
 }
