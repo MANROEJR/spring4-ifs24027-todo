@@ -176,7 +176,6 @@ public class HomeController {
             }
         }
 
-        //coba baru
 
         return String.format("Kata 'ter' yang paling sering muncul adalah '%s' (muncul %d kali).", topWord, maxCount);
     }
